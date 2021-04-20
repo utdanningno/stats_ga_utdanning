@@ -1,0 +1,59 @@
+---
+title: "Utdanning.no besøksstatistikk"
+subtitle: "Data fra Google Analytics"
+author: "harald.groven@kompetansenorge.no" 
+date: '`r format(Sys.Date())`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(tidyverse)
+library(ggthemes)
+```
+
+# Vise statistikk for enkeltyrke 
+
+```{r ga_pw_utdanningno_data, include=FALSE}
+# Importere TSV-fil i R 
+ga_pw_utdanningno_data <- as_tibble(read_delim('../data/ga_pw_utdanningno_data.tsv', "\t", 
+    na = "NULL",
+    escape_double = FALSE, 
+    col_types = cols(
+      year = col_integer(),
+      page_views = col_integer(), 
+      unique_page_views = col_integer(),
+      entrances = col_integer(), 
+      avg_time_on_page = col_time(format = "%H:%M:%S")
+      ), 
+    locale = locale(date_names = "nb"), 
+    trim_ws = TRUE))
+
+View(ga_pw_utdanningno_data)
+```
+
+### Eksempel: Yrkesbeskrivelse sykepleier
+
+```{r df_sykepleier, include=FALSE}
+df_sykepleier <- ga_pw_utdanningno_data %>%
+  filter(page_url=="/yrker/beskrivelse/sykepleier") %>% 
+  select(year, page_views_pst, page_views) %>% 
+  arrange(year) 
+  
+# View(df_sykepleier)
+df_sykepleier
+```
+
+```{r stolpediagram, echo=FALSE}
+# stolpediagram i Ggplot2
+# "year" på ordinalnivå for å vise alle år  
+ggplot(df_sykepleier, aes(x=as.character(year), y=page_views_pst*100)) +
+  xlab("År") + ylab("Andel av sidevisninger") + 
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=page_views), vjust=1.6, color="white", size=3.5) +
+  labs(title = "Sidevisninger på yrket sykepleier") + 
+  # ggthemes::theme_economist() + ggthemes::scale_colour_economist()
+  ggthemes::theme_fivethirtyeight()
+```
