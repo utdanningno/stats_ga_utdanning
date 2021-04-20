@@ -1,6 +1,6 @@
 # stats\_ga\_utdanning
 
-(English summary) Data sets and scripts for analyzing and visualizing page view statistics from Norwegian web site [utdanning.no](https://utdanning.no/tema/om_utdanning.no/about_utdanning.no). Data downloaded from utdanning.no's Google Analytics account. Current data set from 2013 to 2021. 
+(English summary) Data sets and scripts for analyzing and visualizing page view statistics from Norwegian web site [utdanning.no](https://utdanning.no/tema/om_utdanning.no/about_utdanning.no). Data downloaded from utdanning.no's Google Analytics account. Current data set from 2013 to 2021. This repo is probably only interesting for people concerned with Norwegian education statistics. 
 
 Årlig besøksstatistikk fra utdanning.no. Sidevisningsstatistikk er lastet ned fra Google Analytics og bearbeidet. Datasett for antall sidevisninger pr nettside for hvert år fra 01.01.20XX til 09.03.20XX for hvert år. 
 
@@ -10,7 +10,8 @@ Datasettet har tall for 57 millioner sidevisninger siden 2013, 41 millioner unik
 
 *   **Hva er trendene i besøkstallet**? Hvilke utdanninger er brukerne mer/mindre interessert i, i følge besøkstallet? For yrker, utdanningskategorier og utdanningstilbud? Sikkert endel støy som følge av sidenes google-ranking.
 *   Hvordan lage visualiseringer som gjør det lett å vise utviklingen pǻ et yrke/utdanning slik at alle interesserte kunne kikket på tallene? Kunne dette vært vist ved å lage enkle visualiseringer i [plot.ly](https://plotly.com/r/) eller [Ggplot2](https://ggplot2.tidyverse.org/)?
-*   **Er det korrelasjon mellom søkertall for en utdanning og besøkstall på utdanning.no for det samme**? Interessant å se hvor det er størst korrelasjon eller misforhold. Undersøsker elever en utdanning, men blir skremt fra å søke den (pga. lønn/status/utdanningslengde etc)? For å finne ut dette må dataene kobles til søknadstallene fra Samordna opptak [tilgjengelig fra DBHs datavarehus](https://dbh.nsd.uib.no/statistikk/rapport.action?visningId=132&visKode=false&admdebug=false&columns=arstall&index=1&formel=294&hier=insttype!9!instkode!9!fakkode!9!ufakkode!9!progkode&sti=&param=arstall%3D2021!8!2020!8!2019!9!dep_id%3D1!9!nivakode%3DB3!8!B4!8!HK!8!YU!8!AR!8!LN!8!M2!8!ME!8!MX!8!HN!8!M5!8!PR).
+*   **Er det korrelasjon mellom søkertall for en utdanning og besøkstall på utdanning.no for det samme**? Interessant å se hvor det er størst korrelasjon eller misforhold. Undersøsker elever en utdanning, men blir skremt fra å søke den (pga. lønn/status/utdanningslengde etc)? For å finne ut dette må dataene kobles til søknadstallene fra Samordna opptak [tilgjengelig fra DBHs datavarehus](https://dbh.nsd.uib.no/statistikk/rapport.action?visningId=132&visKode=false&admdebug=false&columns=arstall&index=1&formel=294&hier=insttype!9!instkode!9!fakkode!9!ufakkode!9!progkode&sti=&param=arstall%3D2021!8!2020!8!2019!9!dep_id%3D1!9!nivakode%3DB3!8!B4!8!HK!8!YU!8!AR!8!LN!8!M2!8!ME!8!MX!8!HN!8!M5!8!PR). 
+*   Hvor er det størst avvik mellom det folk er interessert i å lese om, og antallet som faktisk har dette yrket/utdanningen? Dette er en måling av hvor kjent/polulært yrket er. Data kan finnes ved å koble antall personer med yrke fra Arbeidstakerregisteret (via [Styrk-08](https://www.ssb.no/klass/klassifikasjoner/7)) til besøksstatistikken. 
 
 # Feltoppsett i datasett
 
@@ -34,8 +35,10 @@ I tillegg til felt for besøksstatisitikk for enkeltsider, er det rader med `pag
 
 # Automatisering?
 
-Dette datasettet er statisk (lasta ned en gang). Men det er mulig å skripte uthenting av et slikt datasett fra Google Analytics, hvis en har en OAuth-pålogging (i R med pakken googleAnalyticsR, andre språk har løsninger for det.)
+Dette datasettet er statisk (lasta ned en gang). Men det er mulig å skripte uthenting av et slikt datasett fra Google Analytics, hvis en har en OAuth-pålogging (i R med pakken [googleAnalyticsR](https://code.markedmondson.me/googleAnalyticsR/), andre språk har løsninger for det.)
 
 # Kobling til andre datasett?
 
-Sidene er tagget med
+Sidene i utdanning.no er tagget med utdanningskategorier (NUS) og yrkeskategorier (STYRK). Dette muliggjør sammenlignging av forholdstall mellom antall besøk på nett med 
+
+![](https://user-images.githubusercontent.com/911226/115392053-70ac0500-a1e0-11eb-9a78-8ea75d7b90de.jpg)
