@@ -1,0 +1,240 @@
+---
+title: "Utdanning.no besøksstatistikk"
+author: "harald.groven@kompetansenorge.no"
+date: "`r format(Sys.Date())`"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: Data fra Google Analytics
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(tidyverse)
+library(ggthemes)
+```
+
+# Vise statistikk for enkeltyrke 
+
+```{r ga_pw_utdanningno_data, include=FALSE}
+# Importere TSV-fil i R 
+#setwd("C:\\Users\\torm\\OneDrive - Kompetanse Norge\\Utdanning.no\\stats_ga_utdanning-main\\data")
+ga_pw_utdanningno_data <- as_tibble(read_delim("./data/ga_pw_utdanningno_data.tsv", "\t", 
+    na = "NULL",
+    escape_double = FALSE, 
+    col_types = cols(
+      year = col_integer(),
+      page_views = col_integer(), 
+      unique_page_views = col_integer(),
+      entrances = col_integer(), 
+      avg_time_on_page = col_time(format = "%H:%M:%S")
+      ), 
+    locale = locale(date_names = "nb"), 
+    trim_ws = TRUE))
+
+#View(ga_pw_utdanningno_data)
+
+```
+### Finding the most visited occupations 2021 and 2013
+
+```{r}
+
+df.21 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2021, page_type == "yrke") %>%
+  slice_max(page_views_pst, n=10) %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+df.13 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2013, page_type == "yrke") %>%
+  slice_max(page_views_pst, n=10) %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+(top10.13 <- df.13$page_title)
+(top10.21 <- df.21$page_title)
+
+
+```
+
+
+### Looking at data for all years for most visited occupations in 2013 and 2021
+
+```{r}
+
+df.1 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, page_type == "yrke") %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+df.2 <- df.1[df.1$page_title %in% top10.21,]
+
+a <- ggplot(df.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+            
+a + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2021")
+
+df.3 <- df.1[df.1$page_title %in% top10.13,]
+b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+            
+b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2013")  
+
+
+```
+
+
+
+### Eksempel: Yrkesbeskrivelse sykepleier
+
+```{r df_sykepleier, include=FALSE}
+df_sykepleier <- ga_pw_utdanningno_data %>%
+  filter(page_url=="/yrker/beskrivelse/sykepleier") %>% 
+  select(year, page_views_pst, page_views) %>% 
+  arrange(year) 
+  
+ #View(df_sykepleier)
+df_sykepleier
+```
+
+```{r stolpediagram, echo=FALSE}
+# stolpediagram i Ggplot2
+# "year" på ordinalnivå for å vise alle år  
+ggplot(df_sykepleier, aes(x=as.character(year), y=page_views_pst*100)) +
+  xlab("År") + ylab("Prosentandel av sidevisninger") + 
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=page_views), vjust=1.6, color="white", size=3.5) +
+  labs(title = "Sidevisninger på yrket sykepleier") + 
+  # ggthemes::theme_economist() + ggthemes::scale_colour_economist()
+  ggthemes::theme_fivethirtyeight()
+```
+
+
+### Se på hvor endring i interesse fra 2013 til 2021 har vært størst
+
+```{r}
+
+df.4 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2021 | year== 2013, page_type == "yrke") %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+
+freq <- data.frame(table(df.4$page_title)) #number of occurences 
+yrke.2years <- as.character(freq$Var1[freq$Freq == 2]) #finding ocupations with both years
+
+df.5 <- df.4[df.4$page_title %in% yrke.2years,] #excluding ocupations with only one occurence
+   # df.5 <- df.5[order(df.5$page_title),]
+
+df.5.13 <- df.5[df.5$year == 2013,] #object for 2013
+  #df.5.13 <- df.5.13[order(df.5.13$page_title),]
+    df.5.13 <- arrange(df.5.13, page_title)
+
+
+df.5.21 <- df.5[df.5$year == 2021,] #object for 2021
+      df.5.21 <- arrange(df.5.21, page_title)
+      
+#test that both years are sorted correct
+  all.equal(df.5.13[,1], df.5.21[,1]) #should be true
+  
+#new df with difference 2021 and 2013
+  diff <- data.frame(df.5.13$page_title, df.5.13$page_views_pst, df.5.21$page_views_pst, df.5.21$page_views_pst-df.5.13$page_views_pst) 
+    names(diff) <- c("page_title", "page_views_pst_13", "page_views_pst_21", "increase_page_views_pst")
+  diff <- arrange(diff, desc(increase_page_views_pst))
+      
+diff.1 <- bind_rows(slice_head(diff,n=5), slice_tail(diff, n=5)) #looking only at a few
+diff.2 <- bind_rows(slice_head(diff,n=20), slice_tail(diff, n=20)) #looking only at some more 
+ View(diff.2)
+  
+# Plot occupations with largest effect
+diff.long <- diff.1 %>% 
+            gather("year", "page_views_pst", page_views_pst_13:page_views_pst_21)
+      
+c <- ggplot(diff.long, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+    c + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title = "Endring i prosentandel sidevisinger til de yrkene m størst endring fra 2013 til 2021")  
+                 
+
+```
+### Ser på utvikling for utdanningsbeskrivelser
+
+```{r}
+
+dfu.21 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2021, page_type == "utdanningsbeskrivelse") %>%
+  slice_max(page_views_pst, n=10) %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+dfu.13 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2013, page_type == "utdanningsbeskrivelse") %>%
+  slice_max(page_views_pst, n=10) %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+(top10.13u <- dfu.13$page_title)
+(top10.21u <- dfu.21$page_title)
+
+```
+
+#Ser på prosentandel av sidevisninger over tid for de mest beøskte utdanningsbeskrivelsene i 2013 and 2021
+```{r}
+dfu.1 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, page_type == "utdanningsbeskrivelse") %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+dfu.2 <- dfu.1[dfu.1$page_title %in% top10.21u,]
+
+e <- ggplot(dfu.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+            
+e + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Utdanningsbeskrivelse", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2021")
+
+dfu.3 <- dfu.1[dfu.1$page_title %in% top10.13u,]
+b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+            
+b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2013")  
+
+
+```
+
+
+### Se på hvor endringen i interesse har vært størst utdanningsbeskrivelser
+
+```{r}
+
+dfu.4 <- ga_pw_utdanningno_data %>%
+  filter(page_views_pst < 1, year == 2021 | year== 2013, page_type == "utdanningsbeskrivelse") %>%
+  select(page_title, year, page_views_pst, page_views) %>%
+  arrange(desc(page_views_pst))
+
+
+freq.u <- data.frame(table(dfu.4$page_title)) #number of occurences 
+ut.2years <- as.character(freq.u$Var1[freq.u$Freq == 2]) #finding ocupations with both years NB: Some education programs have 3 or 4 occurences 
+
+dfu.5 <- dfu.4[dfu.4$page_title %in% ut.2years,] #excluding ocupations with more or less occurences
+   
+
+dfu.5.13 <- dfu.5[dfu.5$year == 2013,] #object for 2013
+     dfu.5.13 <- arrange(dfu.5.13, page_title)
+
+
+dfu.5.21 <- dfu.5[dfu.5$year == 2021,] #object for 2021
+      out <- data.frame(table(dfu.5.21$page_title)) #Helseadminstrasjon comes twice in 2021
+      out <- as.character(out$Var1[out$Freq != 1])
+      dfu.5.21 <- dfu.5.21[! dfu.5.21$page_title %in% out,]    
+
+dfu.5.21 <- arrange(dfu.5.21, page_title)
+      
+#test that both years are sorted correct
+  all.equal(dfu.5.13[,1], dfu.5.21[,1]) #should be true
+  
+#new df with difference 2021 and 2013
+  diff.u <- data.frame(dfu.5.13$page_title, dfu.5.13$page_views_pst, dfu.5.21$page_views_pst, dfu.5.21$page_views_pst-dfu.5.13$page_views_pst) 
+    names(diff.u) <- c("page_title", "page_views_pst_13", "page_views_pst_21", "increase_page_views_pst")
+  diff.u <- arrange(diff.u, desc(increase_page_views_pst))
+      
+diff.u1 <- bind_rows(slice_head(diff.u,n=5), slice_tail(diff.u, n=5)) #looking only at a few
+diff.u2 <- bind_rows(slice_head(diff.u,n=20), slice_tail(diff.u, n=20)) #looking only at some more 
+ View(diff.u2)
+  
+```
