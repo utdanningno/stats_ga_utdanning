@@ -16,12 +16,12 @@ library(tidyverse)
 library(ggthemes)
 ```
 
-# Vise statistikk for enkeltyrke 
+# Henter inn besøkstistikk 
 
 ```{r ga_pw_utdanningno_data, include=FALSE}
 # Importere TSV-fil i R 
 #setwd("C:\\Users\\torm\\OneDrive - Kompetanse Norge\\Utdanning.no\\stats_ga_utdanning-main\\data")
-ga_pw_utdanningno_data <- as_tibble(read_delim("./data/ga_pw_utdanningno_data.tsv", "\t", 
+ga_pw_utdanningno_data <- as_tibble(read_delim("../data/ga_pw_utdanningno_data.tsv", "\t", 
     na = "NULL",
     escape_double = FALSE, 
     col_types = cols(
@@ -35,6 +35,14 @@ ga_pw_utdanningno_data <- as_tibble(read_delim("./data/ga_pw_utdanningno_data.ts
     trim_ws = TRUE))
 
 #View(ga_pw_utdanningno_data)
+
+```
+
+### Henter inn data om yrketsbeskrivelser og antall ansatte 
+
+
+```{r}
+employment <- as_tibble(read_delim("../data/yrkesbeskrivelse_antall_ansatte.tsv", "\t"))
 
 ```
 ### Finding the most visited occupations 2021 and 2013
