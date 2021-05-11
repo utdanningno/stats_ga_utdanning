@@ -1,10 +1,10 @@
 ---
 title: "Utdanning.no besøksstatistikk"
-author: "harald.groven@kompetansenorge.no"
+author: "tor.midtbo@kompetansenorge.no"
 date: "`r format(Sys.Date())`"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 subtitle: Data fra Google Analytics
 ---
 
@@ -14,13 +14,15 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(tidyverse)
 library(ggthemes)
+library(plotly)
 ```
 
-# Henter inn besøkstistikk 
+### Henter inn besøkstistikk fra statisk fil hentet fra Google Analytics. Antall ansatte hentes fra statisk fil fra Arbeidstakerregisteret(via Stryk-08)
+
+Besøkstatistikken viser data fra 1. januar til 9. mars per år.
 
 ```{r ga_pw_utdanningno_data, include=FALSE}
 # Importere TSV-fil i R 
-#setwd("C:\\Users\\torm\\OneDrive - Kompetanse Norge\\Utdanning.no\\stats_ga_utdanning-main\\data")
 ga_pw_utdanningno_data <- as_tibble(read_delim("../data/ga_pw_utdanningno_data.tsv", "\t", 
     na = "NULL",
     escape_double = FALSE, 
@@ -36,18 +38,19 @@ ga_pw_utdanningno_data <- as_tibble(read_delim("../data/ga_pw_utdanningno_data.t
 
 #View(ga_pw_utdanningno_data)
 
-```
-
-### Henter inn data om yrketsbeskrivelser og antall ansatte 
-
-
-```{r}
+#Henter inn data fra arbeidstakerregisteret
 employment <- as_tibble(read_delim("../data/yrkesbeskrivelse_antall_ansatte.tsv", "\t"))
+emp <- employment %>%
+      select(page_title, antall_ansatte) %>%
+      mutate(rank_ansatte= percent_rank(antall_ansatte), rank_ansatte_gruppe = ifelse(percent_rank(antall_ansatte)>.8, "Høyt antall ansatte", ifelse(percent_rank(antall_ansatte)>.3, "Middels antall ansatte", "Lavt antall ansatte")))
+
+ga_pw_utdanningno_data <- left_join(ga_pw_utdanningno_data, emp, by= "page_title")
 
 ```
-### Finding the most visited occupations 2021 and 2013
+### Finner de mest besøkte yrkessidene i 2021 og 2013
 
-```{r}
+
+```{r, echo=F}
 
 df.21 <- ga_pw_utdanningno_data %>%
   filter(page_views_pst < 1, year == 2021, page_type == "yrke") %>%
@@ -60,33 +63,56 @@ df.13 <- ga_pw_utdanningno_data %>%
   slice_max(page_views_pst, n=10) %>%
   select(page_title, year, page_views_pst, page_views) %>%
   arrange(desc(page_views_pst))
-
+```
+##2021
+```{r, echo=F}
 (top10.13 <- df.13$page_title)
+```
+##2013
+```{r, echo=F}
 (top10.21 <- df.21$page_title)
 
-
 ```
+Sykepleier, ingeniør, psykolog, lege, advokat og helefagarbeider går igjen blant de 10 mest besøkte yrkene både i 2013 og 2021.Dette er statusyrker og/eller knyttet til helse. 
 
 
-### Looking at data for all years for most visited occupations in 2013 and 2021
+### Ser på utviklingen i besøkssandel fra 2013 til 2021 for de mest besøkte yrkene i 2021 og 2013
 
-```{r}
+ 
+
+```{r, echo=F}
 
 df.1 <- ga_pw_utdanningno_data %>%
   filter(page_views_pst < 1, page_type == "yrke") %>%
-  select(page_title, year, page_views_pst, page_views) %>%
+  select(page_title, year, page_views_pst, page_views, rank_ansatte, rank_ansatte_gruppe) %>%
   arrange(desc(page_views_pst))
 
 df.2 <- df.1[df.1$page_title %in% top10.21,]
 
-a <- ggplot(df.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
-            
-a + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2021")
+df.2 %>%
+  select(page_title, year, rank_ansatte, rank_ansatte_gruppe) %>%
+  filter(year == 2021) %>%
+  rename(Yrke = page_title)
 
+a <- ggplot(df.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
+            a <- a + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2021")
+    ggplotly(a, tooltip = "text")
+```
+Sykepleier er det klart mest besøkte yrket (med untak av i 2014 der ingeniør lå høyest). I 2021 har 67 400 (0,85 prosent) besøkt yrketbeskrivelsen. Neste på lista er psykolog med 36 300 (0,46 prosent). Sykepleier har nesten dobbelt så mange besøk som psykolog. 
+
+```{r, echo=F}    
+    
 df.3 <- df.1[df.1$page_title %in% top10.13,]
-b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
-            
-b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2013")  
+
+df.3 %>%
+  select(page_title, year, rank_ansatte, rank_ansatte_gruppe) %>%
+  filter(year == 2013) %>%
+  rename(Yrke = page_title)
+
+b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
+      b <- b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + 
+        labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2013")  
+      ggplotly(b, tooltip = "text")
 
 
 ```
