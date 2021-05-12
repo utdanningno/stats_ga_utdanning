@@ -95,8 +95,9 @@ df.2 %>%
   rename(Yrke = page_title)
 
 a <- ggplot(df.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
-            a <- a + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2021")
-    ggplotly(a, tooltip = "text")
+            a <- a + geom_line(aes(color= page_title, label=rank_ansatte_gruppe, label2= rank_ansatte), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte yrkesbeskrivelsene i 2021")
+    
+            ggplotly(a, tooltip = c("label", "label2","text"))
 ```
 Sykepleier er det klart mest besøkte yrket (med untak av i 2014 der ingeniør lå høyest). I 2021 har 67 400 (0,85 prosent) besøkt yrketbeskrivelsen. Neste på lista er psykolog med 36 300 (0,46 prosent). Sykepleier har nesten dobbelt så mange besøk som psykolog. 
 
@@ -104,15 +105,15 @@ Sykepleier er det klart mest besøkte yrket (med untak av i 2014 der ingeniør l
     
 df.3 <- df.1[df.1$page_title %in% top10.13,]
 
-df.3 %>%
-  select(page_title, year, rank_ansatte, rank_ansatte_gruppe) %>%
-  filter(year == 2013) %>%
-  rename(Yrke = page_title)
+# df.3 %>%
+#   select(page_title, year, rank_ansatte, rank_ansatte_gruppe) %>%
+#   filter(year == 2013) %>%
+#   rename(Yrke = page_title)
 
 b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
-      b <- b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + 
-        labs(color= "Yrke", title="Utvikling til de mest besøkte yrkene i 2013")  
-      ggplotly(b, tooltip = "text")
+      b <- b + geom_line(aes(color= page_title, label=rank_ansatte_gruppe, label2= rank_ansatte), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + 
+        labs(color= "Yrke", title="Utvikling til de mest besøkte yrkesbeskrivelsene i 2013")  
+      ggplotly(b, tooltip = c("label", "label2","text"))
 
 
 ```
@@ -173,20 +174,26 @@ df.5.21 <- df.5[df.5$year == 2021,] #object for 2021
   
 #new df with difference 2021 and 2013
   diff <- data.frame(df.5.13$page_title, df.5.13$page_views_pst, df.5.21$page_views_pst, df.5.21$page_views_pst-df.5.13$page_views_pst) 
-    names(diff) <- c("page_title", "page_views_pst_13", "page_views_pst_21", "increase_page_views_pst")
+    names(diff) <- c("page_title", "2013", "2021", "increase_page_views_pst")
   diff <- arrange(diff, desc(increase_page_views_pst))
       
 diff.1 <- bind_rows(slice_head(diff,n=5), slice_tail(diff, n=5)) #looking only at a few
 diff.2 <- bind_rows(slice_head(diff,n=20), slice_tail(diff, n=20)) #looking only at some more 
+diff.2 <- left_join(diff.2, emp, by="page_title") # joining with employment data
  View(diff.2)
   
 # Plot occupations with largest effect
 diff.long <- diff.1 %>% 
-            gather("year", "page_views_pst", page_views_pst_13:page_views_pst_21)
+            gather("year", "page_views_pst", '2013':'2021') 
+
+#Join with employment data
+diff.long <- left_join(diff.long, emp, by="page_title")
+
       
-c <- ggplot(diff.long, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
-    c + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title = "Endring i prosentandel sidevisinger til de yrkene m størst endring fra 2013 til 2021")  
-                 
+c <- ggplot(diff.long, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
+c <-   c + geom_line(aes(color= page_title, label= rank_ansatte_gruppe, label2= rank_ansatte), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title = "Endring i prosentandel sidevisinger til de yrkene m størst endring fra 2013 til 2021")
+ggplotly(c, tooltip = c("label", "label2","text"))
+                
 
 ```
 ### Ser på utvikling for utdanningsbeskrivelser
@@ -219,15 +226,15 @@ dfu.1 <- ga_pw_utdanningno_data %>%
 
 dfu.2 <- dfu.1[dfu.1$page_title %in% top10.21u,]
 
-e <- ggplot(dfu.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
+e <- ggplot(dfu.2, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
             
-e + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Utdanningsbeskrivelse", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2021")
+e <- e + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Utdanningsbeskrivelse", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2021")
+ggplotly(e, tooltip = "text")
 
 dfu.3 <- dfu.1[dfu.1$page_title %in% top10.13u,]
-b <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title)) 
-            
-b + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2013")  
-
+f <- ggplot(df.3, aes(x=as.character(year), y=page_views_pst*100, group= page_title, text= paste("Yrke:", page_title))) 
+f <- f + geom_line(aes(color= page_title), size= 1) + xlab("År") + ylab("Prosentandel av sidevisninger") + labs(color= "Yrke", title="Utvikling til de mest besøkte Utdanningsbeskrivelsene i 2013")  
+ggplotly(f, tooltip = "text")
 
 ```
 
