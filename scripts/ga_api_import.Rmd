@@ -1,0 +1,77 @@
+---
+title: "googleAnalyticsR API import"
+author: "hg"
+date: "9/17/2021"
+output: html_document
+---
+
+# Hente Analytics sidevisningsstatistikk pr år fra APIv4
+
+Importen benytter R-pakken [googleAnalyticsR](https://code.markedmondson.me/googleAnalyticsR/).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(googleAnalyticsR)
+```
+
+# Autentisering
+
+Dette steget er manuelt første gang og vil foretas i standard nettleser. Brukerkontoen, som vil være en gmail-adresse må a leserettigheter til Analytics-kontoen som det skal hentes tall fra. Ansatte i utdannings.no-seksjonen kan benytte og få tilgang til felleskontoen `utdanning.no@gmail.com` som administreres av webredaktør. Første gang denne benyttes vil Google hacker-varsle om pålogging fra ny enhet, så webredaktør må få beskjed om felleskontoen benyttes.
+
+```{r}
+# bytt "brukernavn" med konto som har leserettigheter
+ga_auth(email = "brukernavn@gmail.com")
+
+# Hvilket datakilde skal analysen kjøres på? 
+# ga_id contains the View ID that you want to query
+ga_id <- 70116895
+
+```
+
+# Sampling
+
+Skal det hentes komplette data, eller skal det benytte Analytics utvalg? Standard (default) er at det gjøres utvalg basert på noen få prosent av brukersesjonene. Hvis `anti_sample = TRUE` vil datasettet splittes opp i mindre datointervall, hentes komplett for så å sammenstilles som usampla datasett. Ulempen er at nedlastningskvoten raskere vil bli brukt opp (Undersøk hvor stor er den er?)
+
+```{r}
+# ga_accounts <- ga_account_list() # lists one set of accounts
+# View(ga_accounts)
+
+# Hvilket datointervall skal det hentes data fra?
+start_date <- "2020-09-01" 
+end_date   <- "2021-09-01"
+
+# hente de 10000 mest besøkte sidene fra intervall. 
+# sorter etter sidevisninger med mest populære på topp. 
+gadata <- google_analytics(ga_id,
+                      date_range = c(start_date, end_date),
+                      metrics = "pageviews",
+                      dimensions = c("pageTitle", "pagePath"),
+                      # segments = myseg,
+                      order = order_type("pageviews", sort_order="DESCENDING"),
+                      anti_sample = FALSE, 
+                      max = 10000
+                      )
+# se på dataene
+gadata %>% View(.)
+
+
+```
+# TODO  
+ 
+
+- legge til flere felt i datauttaket enn "pageTitle", "pagePath" og "pageviews"
+- skrive om til en funksjon som looper gjennom års-intervaller
+- legge til felt for år
+- kjøre deskriptiv statistikk 
+
+- Feltnavn: Standardisere feltnav til GAnalytics sine feltnavn, ikke variabelnavnenene vi har funnet på. 
+
+```{r}
+
+
+
+
+
+```
+
