@@ -159,9 +159,9 @@ df.4 <- ga_pw_utdanningno_data %>%
 
 
 freq <- data.frame(table(df.4$page_title)) #number of occurences 
-yrke.2years <- as.character(freq$Var1[freq$Freq == 2]) #finding ocupations with both years
+yrke.2years <- as.character(freq$Var1[freq$Freq == 2]) #finding occupations with both years
 
-df.5 <- df.4[df.4$page_title %in% yrke.2years,] #excluding ocupations with only one occurence
+df.5 <- df.4[df.4$page_title %in% yrke.2years,] #excluding occupations with only one occurrence
    # df.5 <- df.5[order(df.5$page_title),]
 
 df.5.13 <- df.5[df.5$year == 2013,] #object for 2013
@@ -259,7 +259,7 @@ ggplotly(e, tooltip = "text")
 
 ```
 Økningen i besøk for utdanningsbeskrivelser følger det vi så for ykene. Sykepleie og psykologiutdanningen er mest besøkt. Disse yrkene lå også øverst i 2021. 
-Merk: Det er en datafeil for Sykpleier 2019 og Vidreutdanning for sykepleiere 2021. Fallet vi ser for disse to punktene er ikke reelt. 
+Merk: Det er en datafeil for Sykepleier 2019 og Vidreutdanning for sykepleiere 2021. Fallet vi ser for disse to punktene er ikke reelt. 
 ```{r, echo=F, fig.width=10}
 
 dfu.3 <- dfu.1[dfu.1$page_title %in% top10.13u,]
@@ -284,9 +284,9 @@ dfu.4 <- ga_pw_utdanningno_data %>%
 
 
 freq.u <- data.frame(table(dfu.4$page_title)) #number of occurences 
-ut.2years <- as.character(freq.u$Var1[freq.u$Freq == 2]) #finding ocupations with both years NB: Some education programs have 3 or 4 occurences 
+ut.2years <- as.character(freq.u$Var1[freq.u$Freq == 2]) #finding occupations with both years NB: Some education programs have 3 or 4 occurrences 
 
-dfu.5 <- dfu.4[dfu.4$page_title %in% ut.2years,] #excluding ocupations with more or less occurences
+dfu.5 <- dfu.4[dfu.4$page_title %in% ut.2years,] #excluding occupations with more or less occurrences
    
 
 dfu.5.13 <- dfu.5[dfu.5$year == 2013,] #object for 2013
