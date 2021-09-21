@@ -29,8 +29,10 @@ ga_id <- 70116895
 
 ```
 
-# Sampling
+# Fetching av data
+Funksjonen `google_analytics()` henter data fra APIet hvis du ble autentisert i forrige steg. 
 
+## Sampling 
 Skal det hentes komplette data, eller skal det benytte Analytics utvalg? Standard (default) er at det gjøres utvalg basert på noen få prosent av brukersesjonene. Hvis `anti_sample = TRUE` vil datasettet splittes opp i mindre datointervall, hentes komplett for så å sammenstilles som usampla datasett. Ulempen er at nedlastningskvoten raskere vil bli brukt opp (Undersøk hvor stor er den er?)
 
 ```{r}
