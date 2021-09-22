@@ -20,12 +20,12 @@ library(googleAnalyticsR)
 Dette steget er manuelt første gang og vil foretas i standard nettleser. Brukerkontoen, som vil være en gmail-adresse må a leserettigheter til Analytics-kontoen som det skal hentes tall fra. Ansatte i utdannings.no-seksjonen kan benytte og få tilgang til felleskontoen `utdanning.no@gmail.com` som administreres av webredaktør. Første gang denne benyttes vil Google hacker-varsle om pålogging fra ny enhet, så webredaktør må få beskjed om felleskontoen benyttes.
 
 ```{r}
-# bytt "brukernavn" med konto som har leserettigheter
-ga_auth(email = "brukernavn@gmail.com")
-
 # Hvilket datakilde skal analysen kjøres på? 
 # ga_id contains the View ID that you want to query
 ga_id <- 70116895
+
+# bytt "brukernavn" med konto som har leserettigheter!
+ga_auth(email = "brukernavn@gmail.com")
 
 ```
 
@@ -47,15 +47,33 @@ end_date   <- "2021-09-01"
 # sorter etter sidevisninger med mest populære på topp. 
 gadata <- google_analytics(ga_id,
                       date_range = c(start_date, end_date),
-                      metrics = "pageviews",
+                      metrics = c("pageviews", 
+                                  "uniquePageviews",
+                                  "entrances",
+                                  "entranceRate",
+                                  "bounceRate",
+                                  "exitRate",
+                                  "avgTimeOnPage"
+                                  ),
                       dimensions = c("pageTitle", "pagePath"),
                       # segments = myseg,
                       order = order_type("pageviews", sort_order="DESCENDING"),
                       anti_sample = FALSE, 
                       max = 10000
                       )
+
 # se på dataene
-gadata %>% View(.)
+# gadata %>%  View(.)
+
+# +page_type
+# kategorisere sider etter sidetype basert på url 
+gadata %>% 
+  # legge til felt page_type som er tekst til venstre for andre / eller ? i pagePath
+  mutate(page_type = str_extract(
+    # fjerne nynorsk-prefiks
+    (str_replace_all(pagePath, "/nn/", "/")), 
+    "^/([^/?]{1,})"), .after = pagePath) %>% 
+  View(.)
 
 
 ```
@@ -67,13 +85,4 @@ gadata %>% View(.)
 - legge til felt for år
 - kjøre deskriptiv statistikk 
 
-- Feltnavn: Standardisere feltnav til GAnalytics sine feltnavn, ikke variabelnavnenene vi har funnet på. 
-
-```{r}
-
-
-
-
-
-```
-
+- Feltnavn: Standardisere feltnav til GAnalytics sine feltnavn, ikke variabelnavnenene vi har funnet på.
