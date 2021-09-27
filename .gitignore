@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # mac
 .DS_Store
+*.dta
+*.rds
+data/ga_api_pw_utdanningno_data.tsv

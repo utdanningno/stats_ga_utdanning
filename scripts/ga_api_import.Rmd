@@ -25,7 +25,7 @@ Dette steget er manuelt første gang og vil foretas i standard nettleser. Bruker
 ga_id <- 70116895
 
 # bytt "brukernavn" med konto som har leserettigheter!
-ga_auth(email = "brukernavn@gmail.com")
+ga_auth(email = "utdanning.no@gmail.com")
 
 ```
 
@@ -168,3 +168,28 @@ dat <- dat %>%
 - kjøre deskriptiv statistikk 
 
 - Feltnavn: Standardisere feltnav til GAnalytics sine feltnavn, ikke variabelnavnenene vi har funnet på.
+
+# Se på datasettet 
+
+```{r}
+dat %>% 
+  # bare vise yrkesbeskrivelsene 
+  filter(., page_type=="yrke") %>% 
+  # sortere etter nyeste år og sidevisninger
+  arrange(desc(year), desc(pageviews)) %>% 
+  View(.)
+```
+
+
+# Eksportere data til filer for R, Stata eller database (TSV)
+
+```{r}
+library("rio")
+# eksporter R
+export(dat, "../data/ga_api_pw_utdanningno_data.rds")
+# eksporter STATA, fungerer i Stata versjon 14, men ikke versjon 15 
+haven::write_dta(dat, "../data/ga_api_pw_utdanningno_data.dta", version = 14)
+# eksporter TSV
+export(dat, "../data/ga_api_pw_utdanningno_data.tsv")
+```
+
