@@ -22,21 +22,25 @@ library(plotly)
 Besøkstatistikken viser data fra 1. januar til 9. mars per år.
 
 ```{r ga_pw_utdanningno_data, include=FALSE}
-# Importere TSV-fil i R 
-ga_pw_utdanningno_data <- as_tibble(read_delim("../data/ga_pw_utdanningno_data.tsv", "\t", 
-    na = "NULL",
-    escape_double = FALSE, 
-    col_types = cols(
-      year = col_integer(),
-      page_views = col_integer(), 
-      unique_page_views = col_integer(),
-      entrances = col_integer(), 
-      avg_time_on_page = col_time(format = "%H:%M:%S")
-      ), 
-    locale = locale(date_names = "nb"), 
-    trim_ws = TRUE))
+#Importere TSV-fil i R
+# ga_pw_utdanningno_data <- as_tibble(read_delim("../data/ga_pw_utdanningno_data.tsv", "\t",
+#     na = "NULL",
+#     escape_double = FALSE,
+#     col_types = cols(
+#       year = col_integer(),
+#       page_views = col_integer(),
+#       unique_page_views = col_integer(),
+#       entrances = col_integer(),
+#       avg_time_on_page = col_time(format = "%H:%M:%S")
+#       ),
+#     locale = locale(date_names = "nb"),
+#     trim_ws = TRUE))
+# 
+# View(ga_pw_utdanningno_data)
 
-#View(ga_pw_utdanningno_data)
+
+ga_pw_utdanningno_data <- readRDS("../data/ga_clean_pw_utdanningno_data.rds")
+
 
 #Henter inn data fra arbeidstakerregisteret
 employment <- as_tibble(read_delim("../data/yrkesbeskrivelse_antall_ansatte.tsv", "\t"))
@@ -44,8 +48,12 @@ emp <- employment %>%
       select(page_title, antall_ansatte) %>%
       mutate(rank_ansatte= percent_rank(antall_ansatte)*100, rank_ansatte_gruppe = ifelse(percent_rank(antall_ansatte)>.8, "Høyt antall ansatte", ifelse(percent_rank(antall_ansatte)>.3, "Middels antall ansatte", "Lavt antall ansatte")))
 
-ga_pw_utdanningno_data <- left_join(ga_pw_utdanningno_data, emp, by= "page_title")
+# ga_pw_utdanningno_data <- left_join(ga_pw_utdanningno_data, emp, by= c("pageTitle"="page_title"))
 
+
+ga_pw_utdanningno_data <- ga_pw_utdanningno_data %>% 
+  rename(page_views = pageviews) %>% 
+  rename(page_title = pageTitle)
 ```
 ### Finner de mest besøkte yrkessidene i 2013 og 2021
 
@@ -127,7 +135,7 @@ De mest besøkte yrkesbeskrivelsene fra 2013 har med unntak av sykepleier gått 
 
 ```{r df_sykepleier, include=FALSE, results='hide'}
 df_sykepleier <- ga_pw_utdanningno_data %>%
-  filter(page_url=="/yrker/beskrivelse/sykepleier") %>% 
+  filter(page_url=="/yrker/beskrivelse/sykepleier") %>% #må endre til Path
   select(year, page_views_pst, page_views) %>% 
   arrange(year) 
   
@@ -185,7 +193,7 @@ diff.2 <- bind_rows(slice_head(diff,n=20), slice_tail(diff, n=20)) #looking only
 diff.2 <- left_join(diff.2, emp, by="page_title") # joining with employment data
  
 diff.2 <-diff.2 %>%
-  select(-antall_ansatte) %>%
+  #select(-antall_ansatte) %>%
   mutate_if(is.numeric, round,4) %>%
   mutate(rank_ansatte = round(rank_ansatte, 1)) %>%
   mutate(rank_ansatt_gruppe = word(rank_ansatte_gruppe, 1)) %>%
