@@ -332,5 +332,4 @@ diff.u2 <- diff.u2 %>%
 
 knitr::kable(diff.u2)
 
- 
 ```

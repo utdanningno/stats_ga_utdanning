@@ -186,7 +186,6 @@ ga_pw_utdanningno_data <- left_join(data, emp, by= c("pageTitle" = "page_title")
 
 ```{r}
 saveRDS(ga_pw_utdanningno_data, "../data/ga_clean_pw_utdanningno_data.rds")
-
 ```
 
 
