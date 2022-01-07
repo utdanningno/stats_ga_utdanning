@@ -1,0 +1,193 @@
+---
+  title: "googleAnalyticsR API import"
+author: "hg og Tor Midtbø"
+date: "9/27/2021"
+output: html_document
+---
+  
+  # Hente Analytics sidevisningsstatistikk pr år fra APIv4
+  
+  Importen benytter R-pakken [googleAnalyticsR](https://code.markedmondson.me/googleAnalyticsR/).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(googleAnalyticsR)
+```
+
+# Autentisering
+
+Dette steget er manuelt første gang og vil foretas i standard nettleser. Brukerkontoen, som vil være en gmail-adresse må a leserettigheter til Analytics-kontoen som det skal hentes tall fra. Ansatte i utdannings.no-seksjonen kan benytte og få tilgang til felleskontoen `utdanning.no@gmail.com` som administreres av webredaktør. Første gang denne benyttes vil Google hacker-varsle om pålogging fra ny enhet, så webredaktør må få beskjed om felleskontoen benyttes.
+
+```{r}
+# Hvilket datakilde skal analysen kjøres på? 
+# ga_id contains the View ID that you want to query
+ga_id <- 70116895
+
+# bytt "brukernavn" med konto som har leserettigheter!
+ga_auth(email = "tor.midtboe@gmail.com")
+
+```
+
+# Fetching av data
+Funksjonen `google_analytics()` henter data fra APIet hvis du ble autentisert i forrige steg. 
+
+## Sampling 
+Skal det hentes komplette data, eller skal det benytte Analytics utvalg? Standard (default) er at det gjøres utvalg basert på noen få prosent av brukersesjonene. Hvis `anti_sample = TRUE` vil datasettet splittes opp i mindre datointervall, hentes komplett for så å sammenstilles som usampla datasett. Ulempen er at nedlastningskvoten raskere vil bli brukt opp (Undersøk hvor stor er den er?)
+
+## Tidsintervall
+Foreløbig er utrekket tilpasset brukerdata per år. Kun startår (må være fra 1.1) må spesifiseres  (i objektet first_date_first).
+
+
+```{r}
+# ga_accounts <- ga_account_list() # lists one set of accounts
+# View(ga_accounts)
+
+
+first_date_first <- as.Date("2013-01-01")  #Definerer første dato brukerdata skal hentes fra
+last_date_first <- first_date_first+364 #Siste dato første år 
+num_year <- as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(first_date_first, "%Y")) #antall år til idag 
+
+
+(start_dates <- seq(first_date_first, by="12 months", length.out=num_year +1)) #henter ut alle startdatoer
+(end_dates <- c(seq(last_date_first, by="12 months", length.out=num_year), Sys.Date())) #henter ut alle sluttdatoer
+
+
+# hente de 10000 mest besøkte sidene fra intervall. 
+# sorter etter sidevisninger med mest populære på topp. 
+
+# se på dataene
+# gadata %>%  View(.)
+df <- data.frame(matrix(nrow=0,ncol = 8))
+colnames(df) <-                    c("pageviews", 
+                                     "uniquePageviews",
+                                     "entrances",
+                                     "entranceRate",
+                                     "bounceRate",
+                                     "exitRate",
+                                     "avgTimeOnPage",
+                                     "year")
+df$year <- as.character(df$year)
+df$pageviews <- as.numeric(df$pageviews)
+
+for (i in 1:length(start_dates)) {
+  print(c(start_dates[i], end_dates[i]))
+  tmp_df <- google_analytics(ga_id,
+                             date_range = c(start_dates[i], end_dates[i]),
+                             metrics = c("pageviews", 
+                                         "uniquePageviews",
+                                         "entrances",
+                                         "entranceRate",
+                                         "bounceRate",
+                                         "exitRate",
+                                         "avgTimeOnPage"
+                             ),
+                             dimensions = "pagePath",
+                             # segments = myseg,
+                             order = order_type("pageviews", sort_order="DESCENDING"),
+                             anti_sample = TRUE, 
+                             max = 10000
+  )
+  
+  tmp_df["year"] <- format(start_dates[i], "%Y")
+  
+  df <- bind_rows(df, tmp_df)
+  
+  # return(tmp_df)
+}
+```
+
+Problem med at pageTitle kun er tilgjenglig fra data fra og med en dato i 2019. Denne informasjonen må derfor kobles på etterpå
+Henter ut fra 2020-2021 data. Det finnes sikkert bedre (og raskere) måter å hente denne infoen på. 
+Mangler noen yrker i 2021: Næringsmiddelsteknolog- og teknikker. Mykolog, Nettverksadministrator (NB: Kan være pga sampling)
+
+```{r}
+# ga21 <- google_analytics(ga_id,
+#                       date_range = c("2020-01-01", "2021-12-31"),
+#                       metrics = "pageviews",                                 
+#                       dimensions = c("pageTitle", "pagePath"),
+#                       anti_sample = FALSE, 
+#                       max = 10000)
+
+ga21 <- google_analytics(ga_id,
+                         date_range = c(start_dates[9], end_dates[9]),
+                         metrics = c("pageviews", 
+                                     "uniquePageviews",
+                                     "entrances",
+                                     "entranceRate",
+                                     "bounceRate",
+                                     "exitRate",
+                                     "avgTimeOnPage"
+                         ),
+                         dimensions = c("pageTitle", "pagePath"),
+                         # segments = myseg,
+                         order = order_type("pageviews", sort_order="DESCENDING"),
+                         anti_sample = FALSE, 
+                         max = 10000
+)
+kob <- select(ga21, pagePath, pageTitle)
+kob <- dplyr::distinct(kob, pagePath,.keep_all = T)
+dat <- left_join(df, kob, by= "pagePath")
+```
+# Eksportere råddata til filer for R, Stata eller database (TSV)
+
+```{r}
+library("rio")
+# eksporter R
+export(dat, "../data/ga_api_pw_utdanningno_data.rds")
+# eksporter STATA, fungerer i Stata versjon 14, men ikke versjon 15 
+#haven::write_dta(dat, "../data/ga_api_pw_utdanningno_data.dta", version = 14) #feilmelding. For lang streng
+# eksporter TSV
+export(dat, "../data/ga_api_pw_utdanningno_data.tsv")
+```
+
+## Videre databehandling
+
+
+
+```{r}
+dat <- readRDS("../data/ga_api_pw_utdanningno_data.rds") #henter lagret datasett
+```
+
+Sider på nynorsk er et problem for det blir to rader per år per yrke/utdanning. URL er også ofte forskjellig
+Per nå er nynorsk utelatt
+
+Ryddesteg for å få frem page_type. Navngir så tilpasser analyse.
+Beregner prosent av totalt antall sidevisninger (faktisk og unike) per år per unike page_type
+
+
+```{r}
+data <- dat %>% 
+  mutate(page_type = str_extract(
+    # fjerne nynorsk-prefiks
+    (str_replace_all(pagePath, "/nn/", "/")), 
+    "^/([^/?]{1,})"), .after = pagePath) %>% 
+  mutate(page_type = replace(page_type, page_type == "/yrker", "yrke"))  %>% 
+  mutate(page_type = replace(page_type, page_type == "/studiebeskrivelse", "utdanningsbeskrivelse")) %>% 
+  filter(str_detect(pagePath, "/nn", negate = T)) %>% #fjerner alle sider på nynorsk
+  filter(page_type == "yrke" | page_type == "utdanningsbeskrivelse") %>% # ser kun yrker og utdanning
+  group_by(year, page_type) %>%
+  mutate(page_views_pst = pageviews/sum(pageviews)) %>% #prosentvis av sidehenvisninger per år og page_type 
+  mutate(uniquePage_views_pst = uniquePageviews/sum(uniquePageviews)) %>% #prosentvis av sidehenvisninger per år og page_type 
+  ungroup() %>% 
+  arrange(desc(year), desc(page_views_pst)) 
+```
+## Kobler med Arbeidtakerregisteret for å få inn antall antsatte
+```{r}
+#Henter inn data fra arbeidstakerregisteret
+employment <- as_tibble(read_delim("../data/yrkesbeskrivelse_antall_ansatte.tsv", "\t"))
+emp <- employment %>%
+      select(page_title, antall_ansatte) %>%
+      mutate(rank_ansatte= percent_rank(antall_ansatte)*100, rank_ansatte_gruppe = ifelse(percent_rank(antall_ansatte)>.8, "Høyt antall ansatte", ifelse(percent_rank(antall_ansatte)>.3, "Middels antall ansatte", "Lavt antall ansatte")))
+
+ga_pw_utdanningno_data <- left_join(data, emp, by= c("pageTitle" = "page_title"))
+```
+
+
+```{r}
+saveRDS(ga_pw_utdanningno_data, "../data/ga_clean_pw_utdanningno_data.rds")
+```
+
+
+
+
